@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chromium noVNC</title>
+  <style>
+    html, body, #screen { width: 100%; height: 100%; margin: 0; background: #111; }
+    .err { position: fixed; left: 10px; right: 10px; top: 10px; z-index: 10; color: #fff; background: #b00020; padding: 8px 10px; border-radius: 6px; font-size: 13px; white-space: pre-wrap; display: none; }
+  </style>
+</head>
+<body>
+  <div id="err" class="err"></div>
+  <div id="screen"></div>
+
+  <script type="module">
+    const errBox = document.getElementById('err');
+    const showErr = (msg) => {
+      errBox.style.display = 'block';
+      errBox.textContent = msg;
+    };
+
+    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+
+    try {
+      const runtimeResp = await fetch('/api/runtime');
+      const runtime = await runtimeResp.json();
+      const url = proto + location.hostname + ':' + runtime.vncWsPort;
+
+      const mod = await import('/core/rfb.js');
+      const RFB = mod.default || mod.RFB;
+      if (!RFB) {
+        throw new Error('未能从 /core/rfb.js 加载 RFB 导出');
+      }
+
+      const rfb = new RFB(document.getElementById('screen'), url, { credentials: {} });
+      rfb.scaleViewport = true;
+      rfb.resizeSession = true;
+      rfb.viewOnly = false;
+    } catch (e) {
+      showErr(
+        'noVNC 本地资源加载失败。\n' +
+        '请确认已将 noVNC core 资源放到 frontend/core 目录（需要包含 rfb.js）。\n\n' +
+        '错误详情: ' + (e?.message || e)
+      );
+      console.error(e);
+    }
+  </script>
+</body>
+</html>

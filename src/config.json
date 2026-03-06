@@ -1,0 +1,8 @@
+{
+  "listen": ":8080",
+  "user": "root:root",
+  "lang": "en-US",
+  "chromium": "chromium-browser",
+  "xvfb_enable": true,
+  "url": "https://google.com"
+}
