@@ -5,9 +5,9 @@
 主要能力：
 
 - 启动 Chromium（可配合 Xvfb）
-- 通过 `x11vnc + websockify` 暴露 VNC WebSocket
+- 通过 `x11vnc + websockify` 提供 VNC WebSocket，并由程序内 `/ws` 反向代理
 - 内置 Web 页面（`src/frontend/index.html`）
-- HTTP 入口 Basic Auth（`user` 配置，默认 `root:root`）
+- HTTP 入口 Basic Auth（`user` 配置，默认 `root:root`），页面与 WebSocket 共用同一套鉴权
 
 ---
 
@@ -19,7 +19,7 @@ newChromium/
 ├─ build.sh
 ├─ build.bat
 ├─ build/                      # 多平台编译产物
-└─ src/
+└─ src/                        # 源码文件
    ├─ main.go
    ├─ go.mod
    ├─ go.sum
@@ -30,8 +30,6 @@ newChromium/
       └─ core/
          └─ ... noVNC 核心文件
 ```
-
-> 注意：程序运行时的工作目录应为 `src/`，因为配置和前端都在该目录下。
 
 ---
 
@@ -47,7 +45,7 @@ Ubuntu/Debian：
 
 ```bash
 sudo apt update
-sudo apt install -y chromium-browser xvfb x11vnc websockify
+sudo apt install -y chromium chromium-browser xvfb x11vnc websockify
 ```
 
 ---
@@ -85,7 +83,7 @@ http://<服务器IP>:8080
 {
   "listen": ":8080",
   "user": "root:root",
-  "lang": "en-US",
+  "data_dir": "",
   "chromium": "chromium-browser",
   "xvfb_enable": true,
   "url": "https://google.com"
@@ -96,29 +94,14 @@ http://<服务器IP>:8080
 
 - `listen`：HTTP 监听地址
 - `user`：Basic Auth，格式 `username:password`
-- `lang`：浏览器语言（如 `zh-CN` / `en-US`）
+- `data_dir`：浏览器数据目录（为空时自动使用临时目录）
 - `chromium`：Chromium 可执行文件
 - `xvfb_enable`：是否启用 Xvfb
 - `url`：启动后打开的页面
 
 ---
 
-## 5. 前端资源约定
-
-程序固定从 `src/frontend` 读取页面资源：
-
-- `src/frontend/index.html`
-- `src/frontend/core/rfb.js`
-
-并映射为：
-
-- `/` -> `index.html`
-- `/core/*` -> `src/frontend/core/*`
-- `/vendor/*` -> `src/frontend/vendor/*`（若你后续补充 vendor）
-
----
-
-## 6. 常用命令行参数
+## 5. 常用命令行参数
 
 在 `src/` 下执行：
 
@@ -131,7 +114,7 @@ go run . -h
 - `-config`：配置文件路径（默认 `config.json`）
 - `-listen`：HTTP监听地址（默认 `:8080`）
 - `-user`：账号密码（`username:password`）
-- `-lang`：浏览器语言
+- `-data-dir`：Chromium 用户数据目录（为空则使用临时目录）
 - `-width` / `-height`：虚拟分辨率
 - `-chromium` / `-xvfb` / `-x11vnc` / `-websockify`
 - `-xvfb-enable`：是否启用 Xvfb
@@ -140,7 +123,7 @@ go run . -h
 
 ---
 
-## 7. 打包构建
+## 6. 打包构建
 
 ### Linux/macOS
 
@@ -156,15 +139,3 @@ build.bat
 ```
 
 编译产物输出到根目录 `build/`。
-
----
-
-## 8. 运行注意事项
-
-1. 本项目 noVNC 模式仅支持 Linux 运行（依赖 X11 组件）。
-2. 若页面可打开但连接失败，请检查：
-   - `x11vnc`/`websockify` 是否安装
-   - `6080` 端口是否可达
-3. 外网暴露建议配合 HTTPS、反向代理和更强认证策略。
-
-

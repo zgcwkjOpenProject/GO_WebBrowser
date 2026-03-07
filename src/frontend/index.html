@@ -20,12 +20,10 @@
       errBox.textContent = msg;
     };
 
-    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
-
     try {
-      const runtimeResp = await fetch('/api/runtime');
-      const runtime = await runtimeResp.json();
-      const url = proto + location.hostname + ':' + runtime.vncWsPort;
+      const wsURL = new URL('/ws', location.href);
+      wsURL.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const url = wsURL.toString();
 
       const mod = await import('/core/rfb.js');
       const RFB = mod.default || mod.RFB;
